@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Course browser — JS Lab 2</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Course browser</h1>
+    <div class="network" id="network" role="group" aria-label="Network">
+      <span>Network</span>
+      <button type="button" data-network="normal" aria-pressed="true">Normal</button>
+      <button type="button" data-network="slow" aria-pressed="false">Slow</button>
+      <button type="button" data-network="random" aria-pressed="false">Random</button>
+      <button type="button" data-network="failing" aria-pressed="false">Failing</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="browse" aria-label="Courses">
+      <div class="controls">
+        <label class="search">Search
+          <input id="search" type="search" placeholder="Code or title, e.g. learning" autocomplete="off">
+        </label>
+        <div id="departments" class="chips" role="group" aria-label="Department"></div>
+      </div>
+      <div class="status-row">
+        <p id="status" role="status"></p>
+        <button id="retry" type="button" hidden>Try again</button>
+      </div>
+      <ul id="courses" class="cards"></ul>
+    </section>
+
+    <aside class="planner" aria-label="Planner">
+      <h2>Planner</h2>
+      <p id="summary" class="summary"></p>
+      <form id="sgpa-form">
+        <fieldset>
+          <legend>SGPA calculator — pick an expected grade</legend>
+          <ul id="planned" class="planned"></ul>
+        </fieldset>
+      </form>
+      <p id="sgpa" class="sgpa"></p>
+    </aside>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
