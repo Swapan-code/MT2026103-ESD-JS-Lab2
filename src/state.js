@@ -1,10 +1,20 @@
-// useState — from JS Lab 1, section 15, with its smarter setState. This lab's app is built on it.
-// It's your own code: `npm run carry -- ../js-lab1` copies your js-lab1/src/s15-state.js
-// over this file (section 01 of the lab doc). Until then, calling it throws "TODO".
-//
-//   const [getState, setState] = useState(initial, render);
-//   setState(next) or setState((prev) => next) stores the new state and calls render(),
-//   unless the new state is the SAME value (Object.is), in which case nothing happens.
+// Section 15 — Build your own useState
+
+// A tiny version of React's useState.
+//   const [getCount, setCount] = useState(0, render);
+// - getState() returns the current value.
+// - setState(next) accepts a value OR an updater function (prev) => next,
+//   stores the result, and then calls onChange() — the "hidden code" that
+//   redraws the screen.
+// - If the new value is the same (Object.is), it does nothing: no onChange.
 export function useState(initial, onChange) {
-  throw new Error("TODO — from JS Lab 1 §15: run npm run carry -- ../js-lab1 (section 01 of the doc)");
+  let state = initial;
+  const getState = () => state;
+  const setState = (next) => {
+    const value = typeof next === "function" ? next(state) : next;
+    if (Object.is(value, state)) return;
+    state = value;
+    onChange();
+  };
+  return [getState, setState];
 }
