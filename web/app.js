@@ -132,16 +132,28 @@ function renderSgpa(state) {
 // ---------------------------------------------------------------------------
 // Step 1 (section 07) — the state, and the ONLY way to change it.
 // ---------------------------------------------------------------------------
-// TODO: const [getState, setState] = useState(initialState, render);
-// TODO: const dispatch = (event) => …   (hint: setState with an updater that calls transition)
+const [getState, setState] = useState(initialState, render);
+const dispatch = (event) => setState((state) => transition(state, event));
 
 // ---------------------------------------------------------------------------
 // Step 2 (sections 07 and 08) — render(): draw the state.
 // First make it call all five region functions every time. Then (section 08)
 // make it redraw a region only when the part of the state it shows has changed.
 // ---------------------------------------------------------------------------
+let previous = null;
+
+// Has any of these fields of the state changed (a different object) since last render?
+const changed = (state, ...fields) =>
+  previous === null || fields.some((field) => previous[field] !== state[field]);
+
 function render() {
-  // TODO
+  const state = getState();
+  if (changed(state, "departments", "department")) renderDepartments(state);
+  if (changed(state, "status", "error", "courses")) renderStatus(state);
+  if (changed(state, "courses", "planner")) renderCourses(state);
+  if (changed(state, "planner")) renderPlanner(state);
+  if (changed(state, "planner", "grades")) renderSgpa(state);
+  previous = state;
 }
 
 // ---------------------------------------------------------------------------
@@ -149,8 +161,17 @@ function render() {
 // LOAD_START before; LOAD_OK or LOAD_FAIL after. Use fetchCourses(filters, fetchWithNetwork).
 // Section 09: keep only the LATEST response, with createLatestOnly().
 // ---------------------------------------------------------------------------
+const track = createLatestOnly();
+
 async function load() {
-  // TODO
+  const { department, query } = getState();
+  dispatch({ type: "LOAD_START" });
+  try {
+    const result = await track(fetchCourses({ department, q: query }, fetchWithNetwork));
+    if (!result.stale) dispatch({ type: "LOAD_OK", courses: result.value });
+  } catch (error) {
+    dispatch({ type: "LOAD_FAIL", message: error.message });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -158,15 +179,51 @@ async function load() {
 // Use ONE listener per region and find the button/select that was hit
 // (event delegation, JS Lab 1 section 13).
 // ---------------------------------------------------------------------------
-// TODO: search box "input"      → SET_QUERY, then load()
-// TODO: department buttons       → SET_DEPARTMENT, then load()
-// TODO: course card buttons      → ADD (with the course object) or REMOVE (with the id)
-// TODO: grade selects "change"   → SET_GRADE
-// TODO: planner ✕ buttons        → REMOVE
-// TODO: the form's "submit"      → preventDefault (Enter in a field must not reload the page)
-// TODO: "Try again" button       → load()
+// search: update the query at once, but wait for a pause in typing before asking the server
+const loadSoon = debounce(load, 250);
+els.search.addEventListener("input", () => {
+  dispatch({ type: "SET_QUERY", query: els.search.value });
+  loadSoon();
+});
+
+els.departments.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-department]");
+  if (!button) return; // a click between the buttons
+  dispatch({ type: "SET_DEPARTMENT", department: button.dataset.department });
+  load();
+});
+
+els.courses.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-id]");
+  if (!button) return;
+  const id = Number(button.dataset.id);
+  if (button.dataset.inPlanner === "true") {
+    dispatch({ type: "REMOVE", id });
+  } else {
+    const course = getState().courses.find((c) => c.id === id);
+    if (course) dispatch({ type: "ADD", course });
+  }
+});
+
+els.planned.addEventListener("change", (event) => {
+  const select = event.target.closest("select[data-id]");
+  if (!select) return;
+  dispatch({ type: "SET_GRADE", id: Number(select.dataset.id), grade: select.value });
+});
+
+els.planned.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-remove]");
+  if (!button) return;
+  dispatch({ type: "REMOVE", id: Number(button.dataset.remove) });
+});
+
+// Enter in a field must not reload the page
+els.sgpaForm.addEventListener("submit", (event) => event.preventDefault());
+
+els.retry.addEventListener("click", () => load());
 
 // ---------------------------------------------------------------------------
 // Start: draw once, then load.
 // ---------------------------------------------------------------------------
-// TODO: render(); load();
+render();
+load();
